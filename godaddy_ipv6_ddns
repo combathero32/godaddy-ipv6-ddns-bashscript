@@ -1,0 +1,17 @@
+#!/bin/bash
+
+mydomain="example.com"
+myhostname="server"
+gdapikey="api_key:key_secret"
+logdest="syslog.server"
+
+myip=`curl -s "https://api6.ipify.org"`
+dnsdata=`curl -s -X GET -H "Authorization: sso-key ${gdapikey}" "https://api.godaddy.com/v1/domains/${mydomain}/records/AAAA/${myhostname}"`
+gdip=`echo $dnsdata | sed -r 's/.+data":"(.+)","t.+/\1/g' | cut -d ',' -f 1 | tr -d '"'`
+echo "`date '+%Y-%m-%d %H:%M:%S'` - Current External IPv6 is $myip, GoDaddy DNS IPv6 is $gdip"
+
+if [ "$gdip" != "$myip" -a "$myip" != "" ]; then
+  echo "IP has changed!! Updating on GoDaddy"
+  curl -s -X PUT "https://api.godaddy.com/v1/domains/${mydomain}/records/AAAA/${myhostname}" -H "Authorization: sso-key ${gdapikey}" -H "Content-Type: application/json" -d "[{\"data\": \"${myip}\"}]"
+  logger -p $logdest "Changed IPv6 on ${hostname}.${mydomain} from ${gdip} to ${myip}"
+fi
