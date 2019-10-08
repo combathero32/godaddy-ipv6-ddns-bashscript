@@ -1,0 +1,1 @@
+# godaddy-ipv6-ddns-bashscript
